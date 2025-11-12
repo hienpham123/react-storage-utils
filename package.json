@@ -1,7 +1,8 @@
 {
   "name": "react-storage-utils",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": false,
+  "type": "module",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -58,7 +59,8 @@
     "build": "rollup -c",
     "test": "jest --watchAll",
     "eject": "react-scripts eject",
-    "publish:all": "powershell -File bump-version.ps1; git add .; git commit -m 'feat: update version and README'; git push origin main; rollup -c; npm publish --access public"
+    "update-version": "node bump-version.js",
+    "publish:all": "npm run update-version && git add . && git commit -m 'feat: update version and README' && git push origin main && rollup -c && npm publish --access public"
   },
   "eslintConfig": {
     "extends": [
