@@ -24,15 +24,23 @@ import * as _ from "react-storage-utils";
 
 function App() {
   React.useEffect(() => {
-    // Save example object
-    _.saveDraftToStorage({ entries: [["userProfile", { name: "Alice", age: 25 }]] });
+    // Save example object and file
+    _.saveDraftToStorage({
+      entries: [
+        ["userProfile", { name: "Alice", age: 25 }],
+        ["userImages", attachment], // file
+      ],
+    });
 
-    // Load it
-    _.getDraftFromStorage("userProfile").then(data => console.log(data));
+    // Load saved object
+    _.getDraftFromStorage("userProfile").then((data) => {
+      console.log(data);
+    });
   }, []);
 
   return <div>Check console for stored draft output</div>;
 }
+
 
 export default App;
 ```
