@@ -58,7 +58,7 @@
     "build": "rollup -c",
     "test": "jest --watchAll",
     "eject": "react-scripts eject",
-    "publish:all": "git add . && git commit -m 'update version' && git push origin main && rollup -c && npm publish --access public"
+    "publish:all": "powershell -File bump-version.ps1; git add .; git commit -m 'feat: update version and README'; git push origin main; rollup -c; npm publish --access public"
   },
   "eslintConfig": {
     "extends": [
