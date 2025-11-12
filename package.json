@@ -1,6 +1,6 @@
 {
   "name": "react-storage-utils",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": false,
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
