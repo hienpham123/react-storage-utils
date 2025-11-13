@@ -24,7 +24,12 @@ export const useDraftCheck = ({ keys, onConfirm, condition = true, dependencies 
 
                 for (const key of keys) {
                     let value = await getDraftFromStorage(key);
-                    if (value && Object.hasOwn(value, 'data') && Object.hasOwn(value, 'type') && Object.hasOwn(value, 'name')) {
+                    if (
+                        value &&
+                        Object.prototype.hasOwnProperty.call(value, "data") &&
+                        Object.prototype.hasOwnProperty.call(value, "type") &&
+                        Object.prototype.hasOwnProperty.call(value, "name")
+                    ) {
                         value = await jsonToFile(value);
                     }
                     if (value !== null && value !== undefined) data[key] = value;

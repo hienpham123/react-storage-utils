@@ -142,31 +142,3 @@ const checkKeyHasDraftInStorage = async (key: string): Promise<boolean> => {
     const rec = await db.get(STORE_NAME, key);
     return !!(rec && rec.value);
 }
-
-/** ---------- Check & Notify ---------- **/
-export const checkStorageAndNotify = async (
-    keys: string[],
-    showNotify: (keys: string[], getItems: (fromStorage: boolean) => void) => void,
-    getItems: (fromStorage: boolean) => void
-) => {
-    const db = await getDB();
-    const store = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME);
-    let hasData = false;
-
-    for (const key of keys) {
-        const rec = await store.get(key);
-        if (rec && rec.value) {
-            hasData = true;
-            break;
-        }
-    }
-
-    if (hasData) {
-        setTimeout(() => {
-            showNotify(keys, getItems);
-        }, 1000);
-    } else {
-        getItems(false);
-    }
-};
-

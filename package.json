@@ -1,6 +1,6 @@
 {
   "name": "react-storage-utils",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "private": false,
   "type": "module",
   "dependencies": {
@@ -61,7 +61,7 @@
     "test": "jest --watchAll",
     "eject": "react-scripts eject",
     "update-version": "node bump-version.js",
-    "publish:all": "npm run update-version && git add . && git commit -m \"feat: update version and README\" && git push origin main && rollup -c && npm publish --access public"
+    "publish:all": "rollup -c && npm run update-version && git add . && git commit -m \"feat: update version and README\" && git push origin main && npm publish --access public"
   },
   "eslintConfig": {
     "extends": [

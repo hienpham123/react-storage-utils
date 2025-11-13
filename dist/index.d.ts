@@ -31,8 +31,6 @@ declare const saveDraftToStorage: ({ entries }: SaveDraftToStorageParams) => Pro
 /** ---------- Get ---------- **/
 declare const getDraftFromStorage: <T = any>(key: string) => Promise<T | null>;
 declare const checkHasDraftInStorage: (keys: string[]) => Promise<boolean>;
-/** ---------- Check & Notify ---------- **/
-declare const checkStorageAndNotify: (keys: string[], showNotify: (keys: string[], getItems: (fromStorage: boolean) => void) => void, getItems: (fromStorage: boolean) => void) => Promise<void>;
 
 /** ---------- Types ---------- **/
 interface UseDraftCheckOptions {
@@ -64,4 +62,4 @@ declare class DraftCheckManager extends React.Component<DraftCheckManagerProps, 
     render(): react_jsx_runtime.JSX.Element;
 }
 
-export { DraftCheckManager, checkHasDraftInStorage, checkStorageAndNotify, decryptPassword, encryptPassword, fileToJson, getDraftFromStorage, jsonToFile, removeDraftFromStorage, saveDraftToStorage, useDraftCheck };
+export { DraftCheckManager, checkHasDraftInStorage, decryptPassword, encryptPassword, fileToJson, getDraftFromStorage, jsonToFile, removeDraftFromStorage, saveDraftToStorage, useDraftCheck };
