@@ -1,3 +1,5 @@
+import * as react_jsx_runtime from 'react/jsx-runtime';
+
 /** ---------- Encrypt/Decrypt ---------- **/
 declare const encryptPassword: (param: string) => string;
 /** Decrypt function **/
@@ -31,4 +33,14 @@ declare const checkHasDraftInStorage: (keys: string[]) => Promise<boolean>;
 /** ---------- Check & Notify ---------- **/
 declare const checkStorageAndNotify: (keys: string[], showNotify: (keys: string[], getItems: (fromStorage: boolean) => void) => void, getItems: (fromStorage: boolean) => void) => Promise<void>;
 
-export { checkHasDraftInStorage, checkStorageAndNotify, decryptPassword, encryptPassword, fileToJson, getDraftFromStorage, jsonToFile, removeDraftFromStorage, saveDraftToStorage };
+/** ---------- Types ---------- **/
+interface UseDraftCheckOptions {
+    keys: string[];
+    onConfirm: (fromStorage: boolean) => void;
+}
+/** ---------- Hook ---------- **/
+declare const useDraftCheck: ({ keys, onConfirm }: UseDraftCheckOptions) => {
+    dialog: react_jsx_runtime.JSX.Element;
+};
+
+export { checkHasDraftInStorage, checkStorageAndNotify, decryptPassword, encryptPassword, fileToJson, getDraftFromStorage, jsonToFile, removeDraftFromStorage, saveDraftToStorage, useDraftCheck };

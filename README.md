@@ -22,25 +22,54 @@ You can quickly test the library in a React project:
 import React from "react";
 import * as _ from "react-storage-utils";
 
+import React from "react";
+import {
+  saveDraftToStorage,
+  useDraftCheck,
+  getDraftFromStorage,
+} from "react-storage-utils";
+
 function App() {
+  // 1️⃣ Lưu dữ liệu mẫu (object + file) vào IndexedDB
   React.useEffect(() => {
-    // Save example object and file
-    _.saveDraftToStorage({
-      entries: [
-        ["userProfile", { name: "Alice", age: 25 }],
-        ["userImages", attachment], // file
-      ],
+    const fakeFile = new File(["Hello world!"], "example.txt", {
+      type: "text/plain",
     });
 
-    // Load saved object
-    _.getDraftFromStorage("userProfile").then((data) => {
-      console.log(data);
+    saveDraftToStorage({
+      entries: [
+        ["userProfile", { name: "Alice", age: 25 }],
+        ["userFiles", fakeFile],
+      ],
     });
   }, []);
 
-  return <div>Check console for stored draft output</div>;
+  // 2️⃣ Kiểm tra xem có bản nháp cũ không
+  const { dialog } = useDraftCheck({
+    keys: ["userProfile", "userFiles"],
+    onConfirm: async (fromStorage) => {
+      if (fromStorage) {
+        // 3️⃣ Nếu người dùng chọn khôi phục, load lại dữ liệu
+        const userProfile = await getDraftFromStorage("userProfile");
+        const userFilesJson = await getDraftFromStorage("userFiles");
+        const userFiles = await jsonToFile(userFilesJson)
+        console.log("✅ Dữ liệu khôi phục:", { userProfile, userFiles });
+      } else {
+        console.log("⚡ Không khôi phục dữ liệu (người dùng chọn bỏ qua)");
+      }
+    },
+  });
+
+  // 4️⃣ Render dialog xác nhận + UI
+  return (
+    <div>
+      <h2>React Storage Utils Example</h2>
+      <p>Kiểm tra console để xem dữ liệu được lưu hoặc khôi phục.</p>
+      {dialog}
+    </div>
+  );
 }
 
-
 export default App;
+
 ```

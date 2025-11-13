@@ -1,9 +1,10 @@
 {
   "name": "react-storage-utils",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "private": false,
   "type": "module",
   "dependencies": {
+    "@fluentui/react": "^8.125.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -29,6 +30,7 @@
     "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "^13.0.6",
     "@rollup/plugin-typescript": "8.3.0",
+    "@types/crypto-js": "^4.2.2",
     "@types/jest": "^28.1.6",
     "@types/node": "^16.18.126",
     "@types/react": "^19.2.3",
@@ -45,8 +47,7 @@
     "rollup-plugin-postcss": "^4.0.1",
     "rollup-plugin-terser": "7.0.2",
     "rollup-plugin-typescript2": "0.36.0",
-    "web-vitals": "2.1.4",
-    "@types/crypto-js": "^4.2.2"
+    "web-vitals": "2.1.4"
   },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -60,7 +61,7 @@
     "test": "jest --watchAll",
     "eject": "react-scripts eject",
     "update-version": "node bump-version.js",
-    "publish:all": "npm run update-version && git add . && git commit -m 'feat: update version and README' && git push origin main && rollup -c && npm publish --access public"
+    "publish:all": "npm run update-version && git add . && git commit -m \"feat: update version and README\" && git push origin main && rollup -c && npm publish --access public"
   },
   "eslintConfig": {
     "extends": [
