@@ -25,7 +25,7 @@ export const useDraftCheck = ({ keys, onConfirm }: UseDraftCheckOptions) => {
             }
         };
         check();
-    }, [keys, onConfirm]);
+    }, []);
 
     const handleConfirm = React.useCallback(() => {
         setIsDialogVisible(false);
