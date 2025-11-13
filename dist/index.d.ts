@@ -1,4 +1,5 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
+import * as React from 'react';
 
 /** ---------- Encrypt/Decrypt ---------- **/
 declare const encryptPassword: (param: string) => string;
@@ -45,4 +46,22 @@ declare const useDraftCheck: ({ keys, onConfirm, condition, dependencies }: UseD
     dialog: react_jsx_runtime.JSX.Element;
 };
 
-export { checkHasDraftInStorage, checkStorageAndNotify, decryptPassword, encryptPassword, fileToJson, getDraftFromStorage, jsonToFile, removeDraftFromStorage, saveDraftToStorage, useDraftCheck };
+interface DraftCheckManagerProps {
+    keys: string[];
+    condition?: boolean;
+    onConfirm: (data: Record<string, any> | null) => void;
+}
+interface DraftCheckManagerState {
+    isDialogVisible: boolean;
+    draftData: Record<string, any>;
+}
+declare class DraftCheckManager extends React.Component<DraftCheckManagerProps, DraftCheckManagerState> {
+    state: DraftCheckManagerState;
+    componentDidMount(): void;
+    checkDraft: () => Promise<void>;
+    handleConfirm: () => void;
+    handleCancel: () => Promise<void>;
+    render(): react_jsx_runtime.JSX.Element;
+}
+
+export { DraftCheckManager, checkHasDraftInStorage, checkStorageAndNotify, decryptPassword, encryptPassword, fileToJson, getDraftFromStorage, jsonToFile, removeDraftFromStorage, saveDraftToStorage, useDraftCheck };

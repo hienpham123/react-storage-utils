@@ -14,7 +14,7 @@ interface DraftCheckManagerState {
     draftData: Record<string, any>;
 }
 
-export class DraftCheckManager extends React.Component<DraftCheckManagerProps, DraftCheckManagerState> {
+class DraftCheckManager extends React.Component<DraftCheckManagerProps, DraftCheckManagerState> {
     state: DraftCheckManagerState = {
         isDialogVisible: false,
         draftData: {},
@@ -91,3 +91,5 @@ export class DraftCheckManager extends React.Component<DraftCheckManagerProps, D
         );
     }
 }
+
+export default DraftCheckManager;
