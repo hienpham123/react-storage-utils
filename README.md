@@ -18,7 +18,7 @@ npm install react-storage-utils --save
 
 You can quickly test the library in a React project:
 
-## With FunctionalComponent
+### With FunctionalComponent
 
 ```
 import React from "react";
@@ -75,7 +75,7 @@ function App() {
 export default App;
 ```
 
-## With ClassComponent
+### With ClassComponent
 
 ```
 import * as React from "react";
