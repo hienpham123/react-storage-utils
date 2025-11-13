@@ -36,10 +36,12 @@ declare const checkStorageAndNotify: (keys: string[], showNotify: (keys: string[
 /** ---------- Types ---------- **/
 interface UseDraftCheckOptions {
     keys: string[];
-    onConfirm: (fromStorage: boolean) => void;
+    onConfirm: (data: Record<string, any> | null) => void;
+    condition?: boolean;
+    dependencies?: any[];
 }
 /** ---------- Hook ---------- **/
-declare const useDraftCheck: ({ keys, onConfirm }: UseDraftCheckOptions) => {
+declare const useDraftCheck: ({ keys, onConfirm, condition, dependencies }: UseDraftCheckOptions) => {
     dialog: react_jsx_runtime.JSX.Element;
 };
 
