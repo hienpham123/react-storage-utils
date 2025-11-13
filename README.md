@@ -78,55 +78,43 @@ export default App;
 ## With ClassComponent
 
 ```
-class App extends React.Component {
-  state = {
-    showNotify: true,
-    userProfile: null as null | { name: string; age: number },
-    userFiles: null as null | File,
-  };
+import * as React from "react";
+import { DraftCheckManager } from "./DraftCheckManager";
+import { saveDraftToStorage } from "react-storage-utils";
 
-  componentDidMount() {
-    const fakeFile = new File(["Hello world!"], "example.txt", { type: "text/plain" });
-    saveDraftToStorage({
-      entries: [
-        ["userProfile", { name: "Alice", age: 25 }],
-        ["userFiles", fakeFile],
-      ],
-    });
-  }
-
-  handleConfirm = (data: Record<string, any>) => {
-    console.log({ data });
-    // data = { userProfile: { name: "Alice", age: 25 }, userFiles: File }
-    if (data) {
-      this.setState({
-        userProfile: data.userProfile,
-        userFiles: data.userFiles,
-      });
-      console.log("⚡ Dữ liệu đã được khôi phục từ IndexedDB");
-    } else {
-      console.log("⚡ Người dùng chọn bỏ qua khôi phục dữ liệu");
+export class App extends React.Component {
+    componentDidMount() {
+        // Lưu dữ liệu ví dụ
+        const fakeFile = new File(["Hello world!"], "example.txt", { type: "text/plain" });
+        saveDraftToStorage({
+            entries: [
+                ["userProfile", { name: "Alice", age: 25 }],
+                ["userFiles", fakeFile],
+            ],
+        });
     }
-  };
 
-  render() {
-    const { showNotify } = this.state;
-    return (
-      <div>
-        <h2>React Storage Utils Example (Class Component)</h2>
-        <p>Kiểm tra console để xem dữ liệu được lưu hoặc khôi phục.</p>
+    handleDraftConfirm = (data: Record<string, any> | null) => {
+        if (data) {
+            console.log("Restored data:", data);
+            // data = { userProfile: { name: "Alice", age: 25 }, userFiles: File }
+        } else {
+            console.log("User skipped restoring data.");
+        }
+    };
 
-        {/* Wrapper functional để chạy logic hook */}
-        <DraftCheckWrapper
-          keys={["userProfile", "userFiles"]}
-          condition={showNotify}
-          onConfirm={this.handleConfirm}
-          dependencies=[]
-        />
-      </div>
-    );
-  }
+    render() {
+        return (
+            <div>
+                <h2>React Storage Utils Example (Class Component)</h2>
+                <DraftCheckManager
+                    keys={["userProfile", "userFiles"]}
+                    onConfirm={this.handleDraftConfirm}
+                    condition={true}
+                />
+            </div>
+        );
+    }
 }
 
-export default App;
 ```
