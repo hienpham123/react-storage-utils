@@ -1,11 +1,16 @@
 /** ---------- Imports ---------- **/
 import { openDB, IDBPDatabase, DBSchema } from "idb";
 import CryptoJS from "crypto-js";
+import * as React from "react";
+import * as ReactDOM from "react-dom";
 
 /** ---------- Config ---------- **/
 const DB_NAME = "FormDraftDB";
 const STORE_NAME = "drafts";
-const SECRET_KEY = process.env.REACT_APP_SECRET_KEY || "";
+// Support both React and SPFx environments
+const SECRET_KEY = (typeof process !== "undefined" && process.env && process.env.REACT_APP_SECRET_KEY) 
+    ? process.env.REACT_APP_SECRET_KEY 
+    : "";
 
 /** ---------- DB Schema ---------- **/
 interface DraftDB extends DBSchema {
@@ -20,11 +25,13 @@ interface DraftDB extends DBSchema {
 
 let dbPromise: Promise<IDBPDatabase<DraftDB>> | null = null;
 
-const getDB = () => {
+const getDB = (): Promise<IDBPDatabase<DraftDB>> => {
     if (!dbPromise) {
         dbPromise = openDB<DraftDB>(DB_NAME, 1, {
-            upgrade(db) {
-                db.createObjectStore(STORE_NAME, { keyPath: "key" });
+            upgrade(db: any) {
+                if (!db.objectStoreNames.contains("drafts")) {
+                    db.createObjectStore("drafts", { keyPath: "key" });
+                }
             },
         });
     }
@@ -67,8 +74,8 @@ type RemoveDraftFromStorageParams = { keysArr: string[] };
 
 export const removeDraftFromStorage = async ({ keysArr }: RemoveDraftFromStorageParams): Promise<void> => {
     const db = await getDB();
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
+    const tx = (db as any).transaction("drafts", "readwrite");
+    const store = tx.objectStore("drafts");
 
     for (const key of keysArr) {
         await store.delete(key);
@@ -84,7 +91,7 @@ type SaveDraftToStorageParams = {
 };
 
 export const saveDraftToStorage = async ({ entries }: SaveDraftToStorageParams) => {
-    const db = await openDB(DB_NAME, 1);
+    const db = await getDB();
     const processedEntries: { key: string; value: any }[] = [];
 
     for (const [key, value] of entries) {
@@ -103,8 +110,8 @@ export const saveDraftToStorage = async ({ entries }: SaveDraftToStorageParams) 
         processedEntries.push({ key, value: dataToSave });
     }
 
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
+    const tx = (db as any).transaction("drafts", "readwrite");
+    const store = tx.objectStore("drafts");
 
     for (const entry of processedEntries) {
         await store.put(entry);
@@ -117,7 +124,7 @@ export const saveDraftToStorage = async ({ entries }: SaveDraftToStorageParams) 
 export const getDraftFromStorage = async <T = any>(key: string): Promise<T | null> => {
     try {
         const db = await getDB();
-        const rec = await db.get(STORE_NAME, key);
+        const rec = await (db as any).get("drafts", key);
         if (!rec) return null;
         const decrypted = decryptPassword(rec.value);
         return JSON.parse(decrypted) as T;
@@ -138,7 +145,155 @@ export const checkHasDraftInStorage = async (keys: string[]): Promise<boolean> =
 };
 
 const checkKeyHasDraftInStorage = async (key: string): Promise<boolean> => {
-    const db = await getDB();
-    const rec = await db.get(STORE_NAME, key);
-    return !!(rec && rec.value);
+    try {
+        const db = await getDB();
+        const rec = await (db as any).get("drafts", key);
+        return !!(rec && rec.value);
+    } catch (err) {
+        console.error("checkKeyHasDraftInStorage failed:", err);
+        return false;
+    }
 }
+
+/** ---------- Helper: Check và hiển thị dialog restore draft (dùng trong componentDidMount) ---------- **/
+type CheckDraftWithDialogOptions = {
+    keys: string[];
+    title?: string;
+    message?: string;
+    onRestore?: (data: Record<string, any>) => void;
+    onCancel?: () => void;
+    useNativeConfirm?: boolean; // Nếu true, dùng window.confirm thay vì Fluent UI Dialog
+};
+
+/**
+ * Check draft data và hiển thị dialog xác nhận
+ * Trả về Promise với data nếu user chọn restore, null nếu cancel hoặc không có data
+ * 
+ * @example
+ * componentDidMount() {
+ *   checkDraftWithDialog({
+ *     keys: ["formData", "file"],
+ *     onRestore: (data) => this.setState({ formData: data.formData })
+ *   });
+ * }
+ */
+export const checkDraftWithDialog = async (options: CheckDraftWithDialogOptions): Promise<Record<string, any> | null> => {
+    const {
+        keys,
+        title = "Restore data?",
+        message = "Do you want to restore the previously entered data before submitting/saving again?",
+        onRestore,
+        onCancel,
+        useNativeConfirm = false,
+    } = options;
+
+    try {
+        const hasDraft = await checkHasDraftInStorage(keys);
+        if (!hasDraft) {
+            return null;
+        }
+
+        // Lấy draft data
+        const data: Record<string, any> = {};
+        for (const key of keys) {
+            let value = await getDraftFromStorage(key);
+            if (
+                value &&
+                Object.prototype.hasOwnProperty.call(value, "data") &&
+                Object.prototype.hasOwnProperty.call(value, "type") &&
+                Object.prototype.hasOwnProperty.call(value, "name")
+            ) {
+                value = await jsonToFile(value);
+            }
+            if (value !== null && value !== undefined) data[key] = value;
+        }
+
+        if (Object.keys(data).length === 0) {
+            return null;
+        }
+
+        // Hiển thị dialog
+        if (useNativeConfirm) {
+            // Dùng native browser confirm
+            const shouldRestore = window.confirm(`${title}\n\n${message}`);
+            if (shouldRestore) {
+                if (onRestore) onRestore(data);
+                return data;
+            } else {
+                if (onCancel) onCancel();
+                await removeDraftFromStorage({ keysArr: keys });
+                return null;
+            }
+        } else {
+            // Dùng Fluent UI Dialog programmatically hoặc fallback về native confirm
+            return new Promise<Record<string, any> | null>(async (resolve) => {
+                // Thử dùng Fluent UI Dialog
+                try {
+                    // Dynamic import Fluent UI
+                    const FluentUIModule = await import("@fluentui/react");
+                    const { Dialog, DialogType, DialogFooter, DefaultButton, PrimaryButton } = FluentUIModule;
+
+                        // Tạo container cho dialog
+                        const dialogContainer = document.createElement("div");
+                        document.body.appendChild(dialogContainer);
+
+                        const handleConfirm = async () => {
+                            ReactDOM.unmountComponentAtNode(dialogContainer);
+                            if (dialogContainer.parentNode) {
+                                document.body.removeChild(dialogContainer);
+                            }
+                            if (onRestore) onRestore(data);
+                            resolve(data);
+                        };
+
+                        const handleCancel = async () => {
+                            ReactDOM.unmountComponentAtNode(dialogContainer);
+                            if (dialogContainer.parentNode) {
+                                document.body.removeChild(dialogContainer);
+                            }
+                            await removeDraftFromStorage({ keysArr: keys });
+                            if (onCancel) onCancel();
+                            resolve(null);
+                        };
+
+                        // Render dialog
+                        ReactDOM.render(
+                            React.createElement(Dialog, {
+                                hidden: false,
+                                onDismiss: handleCancel,
+                                dialogContentProps: {
+                                    type: DialogType.normal,
+                                    title: title,
+                                    closeButtonAriaLabel: "Close",
+                                    subText: message,
+                                },
+                                minWidth: 450,
+                                modalProps: { isBlocking: true },
+                            },
+                                React.createElement(DialogFooter, null,
+                                    React.createElement(PrimaryButton, { onClick: handleConfirm, text: "Yes, restore" }),
+                                    React.createElement(DefaultButton, { onClick: handleCancel, text: "No" })
+                                )
+                            ),
+                            dialogContainer
+                        );
+                } catch (err) {
+                    // Fallback về native confirm nếu Fluent UI không có hoặc có lỗi
+                    console.warn("Fluent UI not available or error, using native confirm:", err);
+                    const shouldRestore = window.confirm(`${title}\n\n${message}`);
+                    if (shouldRestore) {
+                        if (onRestore) onRestore(data);
+                        resolve(data);
+                    } else {
+                        if (onCancel) onCancel();
+                        removeDraftFromStorage({ keysArr: keys });
+                        resolve(null);
+                    }
+                }
+            });
+        }
+    } catch (err) {
+        console.error("checkDraftWithDialog failed:", err);
+        return null;
+    }
+};

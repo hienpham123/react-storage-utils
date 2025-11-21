@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Storage Utils - Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .info-box {
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+        }
+        .message {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .message.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .message.info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input[type="file"] {
+            padding: 8px;
+        }
+        .file-info {
+            margin-top: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:active {
+            opacity: 0.8;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .instructions {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        .code-block {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-radius: 4px;
+        }
+        .code-block h4 {
+            margin-top: 0;
+        }
+        pre {
+            margin: 0;
+            font-size: 12px;
+            overflow: auto;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .note {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🚀 Demo: checkDraftWithDialog</h2>
+        
+        <div class="info-box">
+            <strong>Lưu ý:</strong> File này là demo standalone. Để test đầy đủ với IndexedDB và Fluent UI Dialog, 
+            bạn cần build library và chạy trong môi trường có React và @fluentui/react.
+        </div>
+
+        <div id="message"></div>
+
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" placeholder="Nhập tên" />
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="Nhập email" />
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Phone:</label>
+            <input type="tel" id="phone" placeholder="Nhập số điện thoại" />
+        </div>
+
+        <div class="form-group">
+            <label for="file">File:</label>
+            <input type="file" id="file" />
+            <div id="file-info" class="file-info"></div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="saveDraft()">💾 Save Draft</button>
+            <button class="btn-danger" onclick="clearDraft()">🗑️ Clear Draft</button>
+            <button class="btn-secondary" onclick="clearForm()">🧹 Clear Form</button>
+            <button class="btn-primary" onclick="testRestore()">🔄 Test Restore</button>
+        </div>
+
+        <div class="instructions">
+            <h3>Hướng dẫn test:</h3>
+            <ol>
+                <li>Nhập thông tin vào form (name, email, phone, file)</li>
+                <li>Click "Save Draft" để lưu vào localStorage (demo đơn giản)</li>
+                <li>Click "Test Restore" để test dialog restore</li>
+                <li>Hoặc refresh trang (F5) - trong app thật sẽ tự động hiển thị dialog</li>
+            </ol>
+            <div class="note">
+                <strong>Lưu ý:</strong> File này chỉ demo UI. Để test đầy đủ với IndexedDB, 
+                hãy import component <code>DraftCheckDemo</code> vào project React/SPFx của bạn.
+            </div>
+        </div>
+
+        <div class="code-block">
+            <h4>Current Form Data:</h4>
+            <pre id="form-data">{"formData": {}, "selectedFile": null}</pre>
+        </div>
+    </div>
+
+    <script>
+        // Simple demo với localStorage (thay vì IndexedDB cho demo standalone)
+        function showMessage(text, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+            messageDiv.style.display = 'block';
+            
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function getFormData() {
+            return {
+                formData: {
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                },
+                selectedFile: document.getElementById('file').files[0]?.name || null,
+            };
+        }
+
+        function updateFormDataDisplay() {
+            const data = getFormData();
+            document.getElementById('form-data').textContent = JSON.stringify(data, null, 2);
+        }
+
+        function saveDraft() {
+            const data = getFormData();
+            try {
+                localStorage.setItem('draftData', JSON.stringify(data));
+                showMessage('💾 Đã lưu draft vào localStorage! Click "Test Restore" hoặc refresh trang để test.', 'success');
+                updateFormDataDisplay();
+            } catch (err) {
+                showMessage('❌ Lỗi khi lưu draft: ' + err.message, 'error');
+            }
+        }
+
+        function clearDraft() {
+            try {
+                localStorage.removeItem('draftData');
+                showMessage('🗑️ Đã xóa draft!', 'success');
+            } catch (err) {
+                showMessage('❌ Lỗi khi xóa draft: ' + err.message, 'error');
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('name').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('file').value = '';
+            document.getElementById('file-info').textContent = '';
+            updateFormDataDisplay();
+        }
+
+        function testRestore() {
+            const savedData = localStorage.getItem('draftData');
+            if (!savedData) {
+                showMessage('ℹ️ Không có draft data. Hãy nhập thông tin và click "Save Draft" trước.', 'info');
+                return;
+            }
+
+            const data = JSON.parse(savedData);
+            const shouldRestore = window.confirm(
+                'Khôi phục dữ liệu?\n\n' +
+                'Bạn có muốn khôi phục dữ liệu đã lưu trước đó không?\n\n' +
+                'Data: ' + JSON.stringify(data.formData, null, 2)
+            );
+
+            if (shouldRestore) {
+                // Restore data
+                document.getElementById('name').value = data.formData.name || '';
+                document.getElementById('email').value = data.formData.email || '';
+                document.getElementById('phone').value = data.formData.phone || '';
+                updateFormDataDisplay();
+                showMessage('✅ Đã khôi phục dữ liệu từ localStorage!', 'success');
+            } else {
+                // Clear draft
+                localStorage.removeItem('draftData');
+                showMessage('ℹ️ Đã bỏ qua khôi phục dữ liệu', 'info');
+            }
+        }
+
+        // Auto-update form data display
+        ['name', 'email', 'phone'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateFormDataDisplay);
+        });
+
+        document.getElementById('file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('file-info').textContent = 
+                    `Selected: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+            } else {
+                document.getElementById('file-info').textContent = '';
+            }
+            updateFormDataDisplay();
+        });
+
+        // Check for saved data on load
+        window.addEventListener('load', function() {
+            const savedData = localStorage.getItem('draftData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                const shouldRestore = window.confirm(
+                    'Khôi phục dữ liệu?\n\n' +
+                    'Bạn có muốn khôi phục dữ liệu đã lưu trước đó không?'
+                );
+
+                if (shouldRestore) {
+                    document.getElementById('name').value = data.formData.name || '';
+                    document.getElementById('email').value = data.formData.email || '';
+                    document.getElementById('phone').value = data.formData.phone || '';
+                    updateFormDataDisplay();
+                    showMessage('✅ Đã khôi phục dữ liệu từ localStorage!', 'success');
+                } else {
+                    localStorage.removeItem('draftData');
+                }
+            }
+            updateFormDataDisplay();
+        });
+    </script>
+</body>
+</html>
+
