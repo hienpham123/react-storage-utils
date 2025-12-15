@@ -78,7 +78,8 @@ export const removeDraftFromStorage = async ({ keysArr }: RemoveDraftFromStorage
     const store = tx.objectStore("drafts");
 
     for (const key of keysArr) {
-        await store.delete(key);
+        const encryptedKey = encryptPassword(key);
+        await store.delete(encryptedKey);
     }
 
     await tx.done;
@@ -107,7 +108,9 @@ export const saveDraftToStorage = async ({ entries }: SaveDraftToStorageParams) 
             dataToSave = encryptPassword(JSON.stringify(value));
         }
 
-        processedEntries.push({ key, value: dataToSave });
+        // Mã hóa key trước khi lưu
+        const encryptedKey = encryptPassword(key);
+        processedEntries.push({ key: encryptedKey, value: dataToSave });
     }
 
     const tx = (db as any).transaction("drafts", "readwrite");
@@ -124,7 +127,9 @@ export const saveDraftToStorage = async ({ entries }: SaveDraftToStorageParams) 
 export const getDraftFromStorage = async <T = any>(key: string): Promise<T | null> => {
     try {
         const db = await getDB();
-        const rec = await (db as any).get("drafts", key);
+        // Mã hóa key trước khi tìm
+        const encryptedKey = encryptPassword(key);
+        const rec = await (db as any).get("drafts", encryptedKey);
         if (!rec) return null;
         const decrypted = decryptPassword(rec.value);
         return JSON.parse(decrypted) as T;
@@ -147,7 +152,9 @@ export const checkHasDraftInStorage = async (keys: string[]): Promise<boolean> =
 const checkKeyHasDraftInStorage = async (key: string): Promise<boolean> => {
     try {
         const db = await getDB();
-        const rec = await (db as any).get("drafts", key);
+        // Mã hóa key trước khi kiểm tra
+        const encryptedKey = encryptPassword(key);
+        const rec = await (db as any).get("drafts", encryptedKey);
         return !!(rec && rec.value);
     } catch (err) {
         console.error("checkKeyHasDraftInStorage failed:", err);
