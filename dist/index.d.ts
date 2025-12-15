@@ -59,9 +59,11 @@ interface UseDraftCheckOptions {
     onConfirm: (data: Record<string, any> | null) => void;
     condition?: boolean;
     dependencies?: any[];
+    title?: string;
+    subText?: string;
 }
 /** ---------- Hook ---------- **/
-declare const useDraftCheck: ({ keys, onConfirm, condition, dependencies }: UseDraftCheckOptions) => {
+declare const useDraftCheck: ({ keys, onConfirm, condition, dependencies, title, subText }: UseDraftCheckOptions) => {
     dialog: React.JSX.Element;
 };
 

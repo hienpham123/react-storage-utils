@@ -1,5 +1,5 @@
 import * as React from "react";
-import DraftCheckDemo from "./DraftCheckDemo";
+import DraftCheckDemoHook from "./DraftCheckDemoHook";
 
 /**
  * App component để chạy demo
@@ -12,7 +12,8 @@ class App extends React.Component {
     render() {
         return (
             <div>
-                <DraftCheckDemo />
+                {/* <DraftCheckDemo /> */}
+                <DraftCheckDemoHook />
             </div>
         );
     }

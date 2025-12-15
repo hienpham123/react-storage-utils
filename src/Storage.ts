@@ -8,9 +8,10 @@ import * as ReactDOM from "react-dom";
 const DB_NAME = "FormDraftDB";
 const STORE_NAME = "drafts";
 // Support both React and SPFx environments
+// Default key nếu không có env variable - đảm bảo mã hóa/giải mã hoạt động đúng
 const SECRET_KEY = (typeof process !== "undefined" && process.env && process.env.REACT_APP_SECRET_KEY) 
     ? process.env.REACT_APP_SECRET_KEY 
-    : "";
+    : "react-storage-utils-default-secret-key-2024";
 
 /** ---------- DB Schema ---------- **/
 interface DraftDB extends DBSchema {
@@ -47,6 +48,52 @@ export const decryptPassword = (param: string) => {
     return bytes.toString(CryptoJS.enc.Utf8);
 };
 
+/** Hash key để đảm bảo cùng key luôn tạo ra cùng hash (deterministic) **/
+const hashKey = (key: string): string => {
+    return CryptoJS.HmacSHA256(key, SECRET_KEY).toString();
+};
+
+/** ---------- React 18/19 Compatibility Helpers ---------- **/
+// Helper để render component tương thích với React 16, 17, 18, và 19
+const renderComponent = (element: React.ReactElement, container: HTMLElement): (() => void) => {
+    const reactDOMAny = ReactDOM as any;
+    
+    // Thử dùng React 18+ API (createRoot) - tương thích cả React 19
+    if (reactDOMAny.createRoot && typeof reactDOMAny.createRoot === 'function') {
+        try {
+            const root = reactDOMAny.createRoot(container);
+            root.render(element);
+            return () => {
+                try {
+                    root.unmount();
+                } catch (e) {
+                    // Ignore unmount errors
+                }
+            };
+        } catch (e) {
+            // Fallback nếu có lỗi
+        }
+    }
+    
+    // Fallback về React 17 API (render/unmountComponentAtNode)
+    if (reactDOMAny.render && typeof reactDOMAny.render === 'function') {
+        reactDOMAny.render(element, container);
+        return () => {
+            try {
+                if (reactDOMAny.unmountComponentAtNode && typeof reactDOMAny.unmountComponentAtNode === 'function') {
+                    reactDOMAny.unmountComponentAtNode(container);
+                }
+            } catch (e) {
+                // Ignore unmount errors
+            }
+        };
+    }
+    
+    // Fallback cuối cùng
+    console.warn('react-storage-utils: Unable to render component. React DOM APIs not available.');
+    return () => {};
+};
+
 /** ---------- File to/from JSON ---------- **/
 export const fileToJson = (file: File): Promise<{ name: string; type: string; data: string }> => {
     return new Promise((resolve, reject) => {
@@ -78,8 +125,9 @@ export const removeDraftFromStorage = async ({ keysArr }: RemoveDraftFromStorage
     const store = tx.objectStore("drafts");
 
     for (const key of keysArr) {
-        const encryptedKey = encryptPassword(key);
-        await store.delete(encryptedKey);
+        // Dùng hash thay vì encrypt để đảm bảo deterministic
+        const hashedKey = hashKey(key);
+        await store.delete(hashedKey);
     }
 
     await tx.done;
@@ -108,9 +156,10 @@ export const saveDraftToStorage = async ({ entries }: SaveDraftToStorageParams) 
             dataToSave = encryptPassword(JSON.stringify(value));
         }
 
-        // Mã hóa key trước khi lưu
-        const encryptedKey = encryptPassword(key);
-        processedEntries.push({ key: encryptedKey, value: dataToSave });
+        // Hash key để đảm bảo cùng key luôn tạo ra cùng hash (deterministic)
+        // Dùng hash thay vì encrypt vì key cần deterministic để tìm lại được
+        const hashedKey = hashKey(key);
+        processedEntries.push({ key: hashedKey, value: dataToSave });
     }
 
     const tx = (db as any).transaction("drafts", "readwrite");
@@ -127,9 +176,9 @@ export const saveDraftToStorage = async ({ entries }: SaveDraftToStorageParams) 
 export const getDraftFromStorage = async <T = any>(key: string): Promise<T | null> => {
     try {
         const db = await getDB();
-        // Mã hóa key trước khi tìm
-        const encryptedKey = encryptPassword(key);
-        const rec = await (db as any).get("drafts", encryptedKey);
+        // Hash key để tìm (deterministic)
+        const hashedKey = hashKey(key);
+        const rec = await (db as any).get("drafts", hashedKey);
         if (!rec) return null;
         const decrypted = decryptPassword(rec.value);
         return JSON.parse(decrypted) as T;
@@ -152,9 +201,9 @@ export const checkHasDraftInStorage = async (keys: string[]): Promise<boolean> =
 const checkKeyHasDraftInStorage = async (key: string): Promise<boolean> => {
     try {
         const db = await getDB();
-        // Mã hóa key trước khi kiểm tra
-        const encryptedKey = encryptPassword(key);
-        const rec = await (db as any).get("drafts", encryptedKey);
+        // Hash key để kiểm tra (deterministic)
+        const hashedKey = hashKey(key);
+        const rec = await (db as any).get("drafts", hashedKey);
         return !!(rec && rec.value);
     } catch (err) {
         console.error("checkKeyHasDraftInStorage failed:", err);
@@ -244,46 +293,53 @@ export const checkDraftWithDialog = async (options: CheckDraftWithDialogOptions)
                         const dialogContainer = document.createElement("div");
                         document.body.appendChild(dialogContainer);
 
-                        const handleConfirm = async () => {
-                            ReactDOM.unmountComponentAtNode(dialogContainer);
+                        // Tạo cleanup function
+                        let unmountFn: (() => void) | null = null;
+
+                        const cleanup = () => {
+                            if (unmountFn) {
+                                unmountFn();
+                                unmountFn = null;
+                            }
                             if (dialogContainer.parentNode) {
                                 document.body.removeChild(dialogContainer);
                             }
+                        };
+
+                        const handleConfirm = async () => {
+                            cleanup();
                             if (onRestore) onRestore(data);
                             resolve(data);
                         };
 
                         const handleCancel = async () => {
-                            ReactDOM.unmountComponentAtNode(dialogContainer);
-                            if (dialogContainer.parentNode) {
-                                document.body.removeChild(dialogContainer);
-                            }
+                            cleanup();
                             await removeDraftFromStorage({ keysArr: keys });
                             if (onCancel) onCancel();
                             resolve(null);
                         };
 
-                        // Render dialog
-                        ReactDOM.render(
-                            React.createElement(Dialog, {
-                                hidden: false,
-                                onDismiss: handleCancel,
-                                dialogContentProps: {
-                                    type: DialogType.normal,
-                                    title: title,
-                                    closeButtonAriaLabel: "Close",
-                                    subText: message,
-                                },
-                                minWidth: 450,
-                                modalProps: { isBlocking: true },
+                        // Render dialog với React 16/17/18/19 compatibility
+                        const dialogElement = React.createElement(Dialog, {
+                            hidden: false,
+                            onDismiss: handleCancel,
+                            dialogContentProps: {
+                                type: DialogType.normal,
+                                title: title,
+                                closeButtonAriaLabel: "Close",
+                                subText: message,
                             },
-                                React.createElement(DialogFooter, null,
-                                    React.createElement(PrimaryButton, { onClick: handleConfirm, text: "Yes, restore" }),
-                                    React.createElement(DefaultButton, { onClick: handleCancel, text: "No" })
-                                )
-                            ),
-                            dialogContainer
+                            minWidth: 450,
+                            modalProps: { isBlocking: true },
+                        },
+                            React.createElement(DialogFooter, null,
+                                React.createElement(PrimaryButton, { onClick: handleConfirm, text: "Yes, restore" }),
+                                React.createElement(DefaultButton, { onClick: handleCancel, text: "No" })
+                            )
                         );
+
+                        // Render component và lưu cleanup function
+                        unmountFn = renderComponent(dialogElement, dialogContainer);
                 } catch (err) {
                     // Fallback về native confirm nếu Fluent UI không có hoặc có lỗi
                     console.warn("Fluent UI not available or error, using native confirm:", err);

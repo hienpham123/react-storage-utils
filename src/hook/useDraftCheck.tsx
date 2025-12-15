@@ -9,10 +9,12 @@ interface UseDraftCheckOptions {
     onConfirm: (data: Record<string, any> | null) => void;
     condition?: boolean;
     dependencies?: any[];
+    title?: string;
+    subText?: string;
 }
 
 /** ---------- Hook ---------- **/
-export const useDraftCheck = ({ keys, onConfirm, condition = true, dependencies = [] }: UseDraftCheckOptions) => {
+export const useDraftCheck = ({ keys, onConfirm, condition = true, dependencies = [], title = "Restore?", subText = "Do you want to restore the previously entered data before submitting/saving again?" }: UseDraftCheckOptions) => {
     const [isDialogVisible, setIsDialogVisible] = React.useState<boolean>(false);
     const [draftData, setDraftData] = React.useState<Record<string, any>>({});
 
@@ -71,10 +73,9 @@ export const useDraftCheck = ({ keys, onConfirm, condition = true, dependencies 
             onDismiss={handleCancel}
             dialogContentProps={{
                 type: DialogType.normal,
-                title: "Restore data?",
+                title: title,
                 closeButtonAriaLabel: "Close",
-                subText:
-                    "Do you want to restore the previously entered data before submitting/saving again?",
+                subText: subText,
             }}
             minWidth={450}
             modalProps={{
@@ -82,7 +83,7 @@ export const useDraftCheck = ({ keys, onConfirm, condition = true, dependencies 
             }}
         >
             <DialogFooter>
-                <PrimaryButton onClick={handleConfirm} text="Yes, restore" />
+                <PrimaryButton onClick={handleConfirm} text="Yes" />
                 <DefaultButton onClick={handleCancel} text="No" />
             </DialogFooter>
         </Dialog>
